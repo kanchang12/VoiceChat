@@ -115,6 +115,7 @@ function stopConversation() {
             document.getElementById('stopButton').disabled = true;
             checkingSpeech = false;
             stopAudio(); // Stop any ongoing voice output
+            removeLoading(); // Remove loading spinner if active
         }
     })
     .catch(error => console.error('Error:', error));
@@ -159,6 +160,9 @@ function startSpeechRecognition() {
 }
 
 function processSpeechInput(text) {
+    displayMessage('user', text);
+    showLoading(); // Show "Thinking..." indicator
+
     fetch('/process_speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,14 +170,17 @@ function processSpeechInput(text) {
     })
     .then(response => response.json())
     .then(data => {
+        removeLoading(); // Remove "Thinking..." indicator
         if (data.status === 'response') {
-            displayMessage('user', text);
             displayMessage('bot', data.text);
-            stopAudio(); // Stop any previous audio before playing the new response
+            stopAudio(); // Stop any previous audio before playing new response
             playAudio(data.audio);
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        removeLoading(); // Ensure loading indicator is removed even on error
+        console.error('Error:', error);
+    });
 }
 
 function displayMessage(role, message) {
@@ -181,6 +188,24 @@ function displayMessage(role, message) {
     messageDiv.className = `message ${role}`;
     messageDiv.textContent = message;
     document.getElementById("messages").appendChild(messageDiv);
+}
+
+// Shows a loading spinner when AI is thinking
+function showLoading() {
+    let messages = document.getElementById("messages");
+    let loadingDiv = document.createElement("div");
+    loadingDiv.id = "loadingIndicator";
+    loadingDiv.className = "message bot";
+    loadingDiv.innerHTML = `<span class="spinner"></span> Thinking...`;
+    messages.appendChild(loadingDiv);
+}
+
+// Removes the loading spinner once response arrives
+function removeLoading() {
+    let loadingDiv = document.getElementById("loadingIndicator");
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
 }
 
 function playAudio(base64Audio) {
