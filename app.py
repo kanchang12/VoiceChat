@@ -9,7 +9,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Configure OpenAI
-openai_api_key = os.environ.get("API-KEY")
+openai_api_key = os.environ.get("API-KEY")  # Make sure you set your OpenAI API key in the environment variables
 client = OpenAI(api_key=openai_api_key)
 
 # Store conversation history
@@ -51,22 +51,24 @@ def home():
 @app.route('/chat')
 def chat():
     try:
-        session_id = 'default'  # Or you could use a session ID to keep the conversation context.
+        session_id = 'default'  # Or use a unique session ID for each user
 
+        # Get the AI response
         ai_message = get_bot_response(session_id)
 
-        # Generate speech
+        # Generate speech from AI response
         tts = gTTS(text=ai_message, lang='en')
         audio_filename = f"response_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
         tts.save(audio_filename)
 
-        # Convert audio to base64
+        # Convert audio to base64 to send back to the client
         with open(audio_filename, "rb") as audio_file:
             audio_base64 = base64.b64encode(audio_file.read()).decode()
 
-        # Clean up audio file
+        # Clean up the audio file after use
         os.remove(audio_filename)
 
+        # Return the AI response text and base64 audio
         return jsonify({
             "text": ai_message,
             "audio": audio_base64
