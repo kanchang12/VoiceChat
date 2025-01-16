@@ -85,6 +85,7 @@
     <script>
 let sessionId = 'default';
 let checkingSpeech = false;
+let currentAudio = null; // Store the currently playing audio
 
 function startConversation() {
     fetch(`/start_conversation?session_id=${sessionId}`)
@@ -104,9 +105,7 @@ function startConversation() {
 function stopConversation() {
     fetch('/stop_conversation', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId })
     })
     .then(response => response.json())
@@ -115,6 +114,7 @@ function stopConversation() {
             document.getElementById('startButton').disabled = false;
             document.getElementById('stopButton').disabled = true;
             checkingSpeech = false;
+            stopAudio(); // Stop any ongoing voice output
         }
     })
     .catch(error => console.error('Error:', error));
@@ -127,30 +127,30 @@ function startCheckingSpeech() {
 
 function startSpeechRecognition() {
     if (!checkingSpeech) return;
-    
+
     if ('webkitSpeechRecognition' in window) {
         const recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        
+
         recognition.onresult = function(event) {
             const text = event.results[0][0].transcript;
             processSpeechInput(text);
         };
-        
+
         recognition.onerror = function(event) {
             console.error('Speech recognition error:', event.error);
             if (checkingSpeech) {
-                setTimeout(startSpeechRecognition, 1000);
+                setTimeout(startSpeechRecognition, 500);
             }
         };
-        
+
         recognition.onend = function() {
             if (checkingSpeech) {
-                setTimeout(startSpeechRecognition, 1000);
+                setTimeout(startSpeechRecognition, 500);
             }
         };
-        
+
         recognition.start();
     } else {
         console.error('Speech recognition not supported in this browser');
@@ -161,19 +161,15 @@ function startSpeechRecognition() {
 function processSpeechInput(text) {
     fetch('/process_speech', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            text: text,
-            session_id: sessionId
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, session_id: sessionId })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'response') {
             displayMessage('user', text);
             displayMessage('bot', data.text);
+            stopAudio(); // Stop any previous audio before playing the new response
             playAudio(data.audio);
         }
     })
@@ -188,8 +184,17 @@ function displayMessage(role, message) {
 }
 
 function playAudio(base64Audio) {
-    let audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
-    audio.play();
+    stopAudio(); // Stop any ongoing audio before playing a new one
+    currentAudio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+    currentAudio.play();
+}
+
+function stopAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+    }
 }
 
     </script>
