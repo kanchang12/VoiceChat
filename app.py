@@ -21,7 +21,7 @@ def get_bot_response(user_input, session_id):
             conversations[session_id] = [
                 {
                     "role": "system",
-                    "content": "You are an AI assistant. Your goal is to help the user with queries. You will never reply more than 10 words at a time"
+                    "content": "You are an AI assistant. Your goal is to help the user with queries. You will never reply more than 30 words at a time"
                 }
             ]
         
