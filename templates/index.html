@@ -3,121 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant</title>
+    <title>AI Chat Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+
+        #chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #messages {
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .bot {
+            background-color: #e3f2fd;
+            margin-right: 20%;
+        }
+
+        .user {
+            background-color: #f5f5f5;
+            margin-left: 20%;
+        }
+
+        #controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #startButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #stopButton {
+            background-color: #f44336;
+            color: white;
+            disabled: true;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
-    <h1>AI Assistant</h1>
-    
-    <!-- Button to start the conversation -->
-    <button id="startButton" onclick="startConversation()">Start Conversation</button>
-
-    <!-- Button to stop the AI from speaking -->
-    <button id="stopButton" onclick="stopAudio()" disabled>Stop Speaking</button>
+    <div id="chat-container">
+        <h1>AI Chat Assistant</h1>
+        <div id="messages"></div>
+        <div id="controls">
+            <button id="startButton" onclick="startConversation()">Start Conversation</button>
+            <button id="stopButton" onclick="stopConversation()" disabled>Stop</button>
+        </div>
+    </div>
 
     <script>
         let audio; // Global audio object
-let checkingSpeech = false;
-let sessionId = 'default';
+        let checkingSpeech = false;
+        let sessionId = 'default';
 
-// Function to start the conversation
-function startConversation() {
-    // Disable start button and enable stop button
-    document.getElementById('startButton').disabled = true;
-    document.getElementById('stopButton').disabled = false;
-    
-    fetch(`/start_conversation?session_id=${sessionId}`)
-        .then(response => response.json())
-        .then(data => {
-            displayMessage('bot', data.text);
-            playAudio(data.audio);
-            startCheckingSpeech();
-        })
-        .catch(error => console.error('Error:', error));
-}
+        // Function to start the conversation
+        function startConversation() {
+            // Disable start button and enable stop button
+            document.getElementById('startButton').disabled = true;
+            document.getElementById('stopButton').disabled = false;
+            
+            fetch(`/start_conversation?session_id=${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayMessage('bot', data.text);
+                    playAudio(data.audio);
+                    startCheckingSpeech();
+                })
+                .catch(error => console.error('Error:', error));
+        }
 
-// Function to start checking for speech
-function startCheckingSpeech() {
-    checkingSpeech = true;
-    checkSpeech();
-}
+        // Function to start checking for speech
+        function startCheckingSpeech() {
+            checkingSpeech = true;
+            checkSpeech();
+        }
 
-// Function to continuously check for speech
-function checkSpeech() {
-    if (!checkingSpeech) return;
-    
-    fetch(`/check_speech?session_id=${sessionId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'response') {
-                // Display user's speech and bot's response
-                displayMessage('user', data.user_text);
-                displayMessage('bot', data.bot_text);
-                playAudio(data.audio);
+        // Function to continuously check for speech
+        function checkSpeech() {
+            if (!checkingSpeech) return;
+            
+            fetch(`/check_speech?session_id=${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'response') {
+                        // Display user's speech and bot's response
+                        displayMessage('user', data.user_text);
+                        displayMessage('bot', data.bot_text);
+                        playAudio(data.audio);
+                    }
+                    // Continue checking if still active
+                    if (checkingSpeech) {
+                        setTimeout(checkSpeech, 500); // Poll every 500ms
+                    }
+                });
+        }
+
+        // Function to stop the conversation
+        function stopConversation() {
+            checkingSpeech = false;
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('stopButton').disabled = true;
+            
+            if (audio) {
+                stopAudio();
             }
-            // Continue checking if still active
-            if (checkingSpeech) {
-                setTimeout(checkSpeech, 500); // Poll every 500ms
+            
+            fetch('/stop_conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+        }
+
+        // Function to play audio
+        function playAudio(base64Audio) {
+            if (audio) {
+                stopAudio(); // Stop any currently playing audio
             }
-        });
-}
+            
+            audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+            document.getElementById('stopButton').disabled = false;
+            
+            audio.play()
+                .then(() => console.log('AI is speaking...'))
+                .catch(error => console.error('Error playing audio:', error));
+                
+            // When audio finishes playing
+            audio.onended = function() {
+                document.getElementById('stopButton').disabled = true;
+            };
+        }
 
-// Function to stop the conversation
-function stopConversation() {
-    checkingSpeech = false;
-    document.getElementById('startButton').disabled = false;
-    document.getElementById('stopButton').disabled = true;
-    
-    if (audio) {
-        stopAudio();
-    }
-    
-    fetch('/stop_conversation', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ session_id: sessionId })
-    });
-}
+        // Function to stop the audio
+        function stopAudio() {
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                console.log("AI speech stopped.");
+                document.getElementById('stopButton').disabled = true;
+            }
+        }
 
-// Function to play audio
-function playAudio(base64Audio) {
-    if (audio) {
-        stopAudio(); // Stop any currently playing audio
-    }
-    
-    audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
-    document.getElementById('stopButton').disabled = false;
-    
-    audio.play()
-        .then(() => console.log('AI is speaking...'))
-        .catch(error => console.error('Error playing audio:', error));
-        
-    // When audio finishes playing
-    audio.onended = function() {
-        document.getElementById('stopButton').disabled = true;
-    };
-}
-
-// Function to stop the audio
-function stopAudio() {
-    if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-        console.log("AI speech stopped.");
-        document.getElementById('stopButton').disabled = true;
-    }
-}
-
-// Function to display messages
-function displayMessage(sender, text) {
-    const messagesDiv = document.getElementById('messages');
-    const messageElement = document.createElement('div');
-    messageElement.className = `message ${sender}`;
-    messageElement.textContent = text;
-    messagesDiv.appendChild(messageElement);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
+        // Function to display messages
+        function displayMessage(sender, text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}`;
+            messageElement.textContent = text;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
     </script>
 </body>
 </html>
