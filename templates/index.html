@@ -6,23 +6,52 @@
     <title>AI Assistant</title>
 </head>
 <body>
-    <h1>AI Assistant - Speaking Automatically</h1>
+    <h1>AI Assistant</h1>
+    
+    <!-- Button to start the conversation -->
+    <button id="startButton" onclick="startConversation()">Start Conversation</button>
+
+    <!-- Button to stop the AI from speaking -->
+    <button id="stopButton" onclick="stopAudio()" disabled>Stop Speaking</button>
+
     <script>
-        // Automatically fetch the response when the page loads
-        window.onload = function() {
+        let audio; // Variable to hold the audio object
+
+        // Function to stop the audio
+        function stopAudio() {
+            if (audio) {
+                audio.pause();  // Pause the audio
+                audio.currentTime = 0;  // Optionally reset the audio to the start
+                console.log("AI speech stopped.");
+                document.getElementById('stopButton').disabled = true; // Disable stop button after stopping
+            }
+        }
+
+        // Function to start the conversation
+        function startConversation() {
+            // Disable the start button once clicked to prevent multiple clicks
+            document.getElementById('startButton').disabled = true;
+
+            // Enable the stop button once the conversation starts
+            document.getElementById('stopButton').disabled = false;
+
+            // Fetch the AI response and play the audio
             fetch('/chat')
                 .then(response => response.json())
                 .then(data => {
+                    // Create an audio object from the base64 data
+                    audio = new Audio('data:audio/mp3;base64,' + data.audio);
+
                     // Play the audio response from AI
-                    const audioBase64 = data.audio;  // Get the base64 audio data
-                    const audio = new Audio('data:audio/mp3;base64,' + audioBase64);
-                    audio.play();
-                    
-                    // Optionally, log the text response as well
+                    audio.play()
+                        .then(() => console.log('AI is speaking...'))
+                        .catch(error => console.error('Error playing audio:', error));
+
+                    // Optionally, log the text response
                     console.log('AI Response:', data.text);
                 })
                 .catch(error => console.error('Error:', error));
-        };
+        }
     </script>
 </body>
 </html>
