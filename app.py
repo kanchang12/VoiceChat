@@ -5,6 +5,7 @@ from gtts import gTTS
 import base64
 import os
 from datetime import datetime
+from urllib.parse import quote
 
 app = Flask(__name__)
 
