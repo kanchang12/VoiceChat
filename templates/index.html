@@ -35,8 +35,8 @@
             // Enable the stop button once the conversation starts
             document.getElementById('stopButton').disabled = false;
 
-            // Fetch the AI response and play the audio
-            fetch('/chat')
+            // Fetch the first response (greeting message)
+            fetch('/start_conversation')
                 .then(response => response.json())
                 .then(data => {
                     // Create an audio object from the base64 data
