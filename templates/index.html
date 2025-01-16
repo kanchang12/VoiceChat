@@ -83,7 +83,44 @@
     </div>
 
     <script>
-       function startCheckingSpeech() {
+let sessionId = 'default';
+let checkingSpeech = false;
+
+function startConversation() {
+    fetch(`/start_conversation?session_id=${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "ready") {
+                displayMessage('bot', data.text);
+                playAudio(data.audio);
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('stopButton').disabled = false;
+                startCheckingSpeech();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function stopConversation() {
+    fetch('/stop_conversation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ session_id: sessionId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "stopped") {
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('stopButton').disabled = true;
+            checkingSpeech = false;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function startCheckingSpeech() {
     checkingSpeech = true;
     startSpeechRecognition();
 }
@@ -142,6 +179,19 @@ function processSpeechInput(text) {
     })
     .catch(error => console.error('Error:', error));
 }
+
+function displayMessage(role, message) {
+    let messageDiv = document.createElement("div");
+    messageDiv.className = `message ${role}`;
+    messageDiv.textContent = message;
+    document.getElementById("messages").appendChild(messageDiv);
+}
+
+function playAudio(base64Audio) {
+    let audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+    audio.play();
+}
+
     </script>
 </body>
 </html>
