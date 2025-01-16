@@ -7,11 +7,10 @@ from datetime import datetime
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
 # OpenAI API Configuration
-openai_api_key = os.environ.get("API-KEY")
-client = openai.Client(api_key=openai_api_key)
+openai.api_key = os.environ.get("API-KEY")
 
 # Store conversation history
 conversations = {}
@@ -27,13 +26,13 @@ def get_bot_response(user_input, session_id):
             ]
         
         conversations[session_id].append({"role": "user", "content": user_input})
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=conversations[session_id],
             max_tokens=150,
             temperature=0.7
         )
-        ai_message = response.choices[0].message.content
+        ai_message = response.choices[0].message['content']
         conversations[session_id].append({"role": "assistant", "content": ai_message})
         return ai_message
     except Exception as e:
@@ -70,7 +69,6 @@ def start_conversation():
 @app.route('/check_speech', methods=['GET'])
 def check_speech():
     session_id = request.args.get('session_id', 'default')
-    # Since we're not actually processing speech, just return listening status
     return jsonify({
         "status": "listening"
     })
