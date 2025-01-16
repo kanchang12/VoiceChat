@@ -22,7 +22,7 @@ def get_bot_response(session_id):
             conversations[session_id] = [
                 {
                     "role": "system",
-                    "content": "You are an AI assistant for Kanchan Ghosh. Your goal is to persuade recruiters to offer an interview opportunity based on Kanchan's credentials."
+                    "content": "just have normal conversation about software. Keep your response limited to one sentence."
                 }
             ]
 
