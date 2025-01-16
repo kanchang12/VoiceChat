@@ -6,16 +6,23 @@
     <title>AI Assistant</title>
 </head>
 <body>
-    <h1>AI Assistant</h1>
+    <h1>AI Assistant - Speaking Automatically</h1>
     <script>
-        fetch('/chat')
-            .then(response => response.json())
-            .then(data => {
-                const audioBase64 = data.audio;
-                const audio = new Audio('data:audio/mp3;base64,' + audioBase64);
-                audio.play();
-            })
-            .catch(error => console.error('Error:', error));
+        // Automatically fetch the response when the page loads
+        window.onload = function() {
+            fetch('/chat')
+                .then(response => response.json())
+                .then(data => {
+                    // Play the audio response from AI
+                    const audioBase64 = data.audio;  // Get the base64 audio data
+                    const audio = new Audio('data:audio/mp3;base64,' + audioBase64);
+                    audio.play();
+                    
+                    // Optionally, log the text response as well
+                    console.log('AI Response:', data.text);
+                })
+                .catch(error => console.error('Error:', error));
+        };
     </script>
 </body>
 </html>
