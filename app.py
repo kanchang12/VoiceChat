@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify
 import openai
 from openai import OpenAI
 from gtts import gTTS
 import base64
 import os
 from datetime import datetime
-from urllib.parse import quote as url_quote
 
 app = Flask(__name__)
 
@@ -16,7 +15,7 @@ client = OpenAI(api_key=openai_api_key)
 # Store conversation history
 conversations = {}
 
-def get_bot_response(user_input, session_id):
+def get_bot_response(session_id):
     try:
         # Initialize conversation history if needed
         if session_id not in conversations:
@@ -27,8 +26,8 @@ def get_bot_response(user_input, session_id):
                 }
             ]
 
-        # Add user message to history
-        conversations[session_id].append({"role": "user", "content": user_input})
+        # Add a default user message to start the conversation
+        conversations[session_id].append({"role": "user", "content": "Hello, how can you help me?"})
 
         # Get OpenAI response
         response = client.chat.completions.create(
@@ -49,14 +48,12 @@ def get_bot_response(user_input, session_id):
 def home():
     return render_template('index.html')
 
-@app.route('/chat', methods=['POST'])
+@app.route('/chat')
 def chat():
     try:
-        data = request.json
-        user_message = data.get('message', '')
-        session_id = data.get('session_id', 'default')
+        session_id = 'default'  # Or you could use a session ID to keep the conversation context.
 
-        ai_message = get_bot_response(user_message, session_id)
+        ai_message = get_bot_response(session_id)
 
         # Generate speech
         tts = gTTS(text=ai_message, lang='en')
