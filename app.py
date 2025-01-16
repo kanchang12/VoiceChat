@@ -33,7 +33,7 @@ def get_bot_response(session_id):
         response = client.chat.completions.create(
             model="gpt-4",
             messages=conversations[session_id],
-            max_tokens=150,
+            max_tokens=15,
             temperature=0.7
         )
 
